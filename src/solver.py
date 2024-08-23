@@ -48,20 +48,20 @@ class Solver:
             self.model.train()
             trn_loss = self._run_one_trn_epoch()
 
-            print(f'Train Summary | Epoch {epoch+1:02d} | Loss = {trn_loss:.3f}')
+            print(f"Train Summary | Epoch {epoch+1:02d} | Loss = {trn_loss:.3f}")
 
             # Validate.
             self.model.eval()
             with torch.no_grad():             
                 val_loss = self._run_one_val_epoch()
 
-            print(f'Valid Summary | Epoch {epoch+1:02d} | Loss = {val_loss:.3f}')
+            print(f"Valid Summary | Epoch {epoch+1:02d} | Loss = {val_loss:.3f}")
 
             # Update scheduler.
             if self.scheduler is not None:
-                self.scheduler.step()
+                self.scheduler.step(val_loss)
                 last_lr = self.scheduler.get_last_lr()[0]
-                print(f'Learning rate = {last_lr:.6f}')
+                print(f"\tLearning rate = {last_lr:.6f}")
 
             # Save model.
             self.trn_loss_history[epoch] = trn_loss
@@ -69,7 +69,7 @@ class Solver:
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
                 self.model.save_to_path(self.args['model_path'])
-                print(f"Best model saved at {self.args['model_path']}")
+                print(f"\tBest model saved at {self.args['model_path']}")
 
             self.running_epoch += 1
             print('\n')
@@ -129,7 +129,7 @@ class Solver:
         with torch.no_grad():
             tst_loss = self._run_one_tst_epoch()
 
-            print(f'Test Summary | Loss = {tst_loss:.3f}')
+            print(f"Test Summary  | Loss = {tst_loss:.3f}")
             
     def _run_one_tst_epoch(self):
 
