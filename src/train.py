@@ -3,11 +3,13 @@ import sys
 import torch
 from torch.utils.data import DataLoader
 
-# Add the parent directory to the path.
-sys.path.append(os.path.join(os.path.dirname((os.path.dirname(__file__)))))
-sys.path.append(os.path.join(os.path.dirname((os.path.dirname(__file__))), 'data'))
-sys.path.append(os.path.join(os.path.dirname((os.path.dirname(__file__))), 'models'))
-sys.path.append(os.path.join(os.path.dirname((os.path.dirname(__file__))), 'hstasnet'))
+# Add necessary directories to the path.
+parent_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(parent_directory, 'data'))
+sys.path.append(os.path.join(parent_directory, 'models'))
+sys.path.append(os.path.join(parent_directory, 'hstasnet'))
+sys.path.append(os.path.join(parent_directory, 'logs'))
+sys.stdout = open(os.path.join('logs', 'train.log'), 'wt')
 
 import losses
 from solver import Solver
@@ -23,8 +25,8 @@ def define_args():
     """
     args = {
         # Training parameters.
-        'batch_size': 10,
-        'num_epochs': 100,
+        'batch_size': 1,
+        'num_epochs': 3,
         'learning_rate': 0.001,
         'num_workers': 2,
         'continue_from': None,
@@ -40,10 +42,10 @@ def define_args():
             'time_win_size': 1024,
             'time_hop_size': 512,
             'time_ftr_size': 1500,
-            'freq_win_size': 1024,
-            'freq_hop_size': 512,
-            'freq_fft_size': 1024,
-            'rnn_hidden_size': 1000,            
+            'spec_win_size': 1024,
+            'spec_hop_size': 512,
+            'spec_fft_size': 1024,
+            'rnn_hidden_size': 200,            
             }
         }
 
@@ -98,7 +100,7 @@ def main(args, train=True):
     optimizer = torch.optim.Adam(model.parameters(), lr=args['learning_rate'])
 
     # Define scheduler.
-    scheduler = None
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
 
     # Define solver.
     solver = Solver(model, criterion, optimizer, scheduler, loaders, args)
@@ -109,8 +111,12 @@ def main(args, train=True):
 
 if __name__ == '__main__':
 
+    print("\n*** START TRAINING ***\n")
+
     # Define arguments.
     args = define_args()
 
     # Train the model.
-    solver = main(args, train=False)
+    solver = main(args, train=True)
+
+    print("\n*** FINISHED TRAINING ***\n")

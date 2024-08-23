@@ -15,9 +15,9 @@ class HSTasNet(nn.Module):
                  time_win_size: int = 1024,
                  time_hop_size: int = 512,
                  time_ftr_size: int = 1500,
-                 freq_win_size: int = 1024,
-                 freq_hop_size: int = 512,
-                 freq_fft_size: int = 1024,
+                 spec_win_size: int = 1024,
+                 spec_hop_size: int = 512,
+                 spec_fft_size: int = 1024,
                  rnn_hidden_size: int = 1000,
                  ):
 
@@ -28,20 +28,20 @@ class HSTasNet(nn.Module):
         self.time_win_size = time_win_size
         self.time_hop_size = time_hop_size
         self.time_ftr_size = time_ftr_size
-        self.freq_win_size = freq_win_size
-        self.freq_hop_size = freq_hop_size
-        self.freq_fft_size = freq_fft_size
+        self.spec_win_size = spec_win_size
+        self.spec_hop_size = spec_hop_size
+        self.spec_fft_size = spec_fft_size
         self.rnn_hidden_size = rnn_hidden_size
 
         time_feature_size = time_ftr_size
-        freq_feature_size = (freq_win_size//2 + 1)
+        spec_feature_size = (spec_win_size//2 + 1)
         self.time_feature_size = time_feature_size
-        self.freq_feature_size = freq_feature_size
+        self.spec_feature_size = spec_feature_size
 
         assert not (time_win_size % time_hop_size), f"time_win_size ({time_win_size}) must be a multiple of time_hop_size ({time_hop_size})"
-        assert not (freq_win_size % freq_hop_size), f"freq_win_size ({freq_win_size}) must be a multiple of freq_hop_size ({freq_hop_size})"
-        assert time_win_size == freq_win_size, f"time_win_size ({time_win_size}) must be equal to freq_win_size ({freq_win_size})"
-        assert time_hop_size == freq_hop_size, f"time_hop_size ({time_hop_size}) must be equal to freq_hop_size ({freq_hop_size})" 
+        assert not (spec_win_size % spec_hop_size), f"spec_win_size ({spec_win_size}) must be a multiple of spec_hop_size ({spec_hop_size})"
+        assert time_win_size == spec_win_size, f"time_win_size ({time_win_size}) must be equal to spec_win_size ({spec_win_size})"
+        assert time_hop_size == spec_hop_size, f"time_hop_size ({time_hop_size}) must be equal to spec_hop_size ({spec_hop_size})" 
 
         self.time_encoder = TimeEncoder(
             N=time_win_size,
@@ -49,10 +49,10 @@ class HSTasNet(nn.Module):
             M=time_ftr_size,
             )
 
-        self.freq_encoder = SpecEncoder(
-            n_win=freq_win_size,
-            n_hop=freq_hop_size,
-            n_fft=freq_fft_size,
+        self.spec_encoder = SpecEncoder(
+            n_win=spec_win_size,
+            n_hop=spec_hop_size,
+            n_fft=spec_fft_size,
             window='hamming',
             )
 
@@ -62,10 +62,10 @@ class HSTasNet(nn.Module):
             M=time_ftr_size,
             )
 
-        self.freq_decoder = SpecDecoder(
-            n_win=freq_win_size,
-            n_hop=freq_hop_size,
-            n_fft=freq_fft_size,
+        self.spec_decoder = SpecDecoder(
+            n_win=spec_win_size,
+            n_hop=spec_hop_size,
+            n_fft=spec_fft_size,
             window='hamming',
             )
 
@@ -91,26 +91,26 @@ class HSTasNet(nn.Module):
             out_features=num_channels*num_sources*time_feature_size,
             )
 
-        self.freq_rnn_in = Memory(
-            input_size=num_channels*freq_feature_size,
+        self.spec_rnn_in = Memory(
+            input_size=num_channels*spec_feature_size,
             hidden_size=rnn_hidden_size,
             num_layers=1,
             )
         
-        self.freq_skip_fc = nn.Linear(
-            in_features = num_channels*freq_feature_size,
+        self.spec_skip_fc = nn.Linear(
+            in_features = num_channels*spec_feature_size,
             out_features = rnn_hidden_size,
             )        
         
-        self.freq_rnn_out = Memory(
+        self.spec_rnn_out = Memory(
             input_size = rnn_hidden_size,
             hidden_size = rnn_hidden_size,
             num_layers = 1,
             )        
         
-        self.freq_mask_fc = nn.Linear(
+        self.spec_mask_fc = nn.Linear(
             in_features = rnn_hidden_size,
-            out_features = num_channels*num_sources*freq_feature_size,
+            out_features = num_channels*num_sources*spec_feature_size,
             )    
 
         self.hybrid_rnn = Memory(
@@ -119,7 +119,7 @@ class HSTasNet(nn.Module):
             num_layers = 1,
             )
 
-    def forward(self, waveform, waveform_length = None):
+    def forward(self, waveform, length = None):
         """
         Forward pass through the model.
         
@@ -145,25 +145,25 @@ class HSTasNet(nn.Module):
         s_time = s_time.reshape(B, T, C*M)                              # B x T x (C*M)
         y_time = self.time_rnn_in(s_time)                               # B x T x H
 
-        # Frequency domain encoding.
-        x_freq, x_angl = self.freq_encoder(x)                           # (B*C) x T x F
+        # specuency domain encoding.
+        x_spec, x_angl = self.spec_encoder(x)                           # (B*C) x T x F
 
-        # Frequency domain RNN.
-        BC, T, F = x_freq.size()
-        x_freq = x_freq.view(B, C, T, F)                                # B x C x T x F
-        s_freq = x_freq.permute(0, 2, 1, 3)                             # B x T x C x F
-        s_freq = s_freq.reshape(B, T, C*F)                              # B x T x (C*F)        
-        y_freq = self.freq_rnn_in(s_freq)                               # B x T x H
+        # specuency domain RNN.
+        BC, T, F = x_spec.size()
+        x_spec = x_spec.view(B, C, T, F)                                # B x C x T x F
+        s_spec = x_spec.permute(0, 2, 1, 3)                             # B x T x C x F
+        s_spec = s_spec.reshape(B, T, C*F)                              # B x T x (C*F)        
+        y_spec = self.spec_rnn_in(s_spec)                               # B x T x H
 
         # Concat time and frequency domain outputs.
-        y = torch.cat((y_time, y_freq), dim=2)                          # B x T x (2*H)
+        y = torch.cat((y_time, y_spec), dim=2)                          # B x T x (2*H)
 
         # Hybrid RNN.
         y = self.hybrid_rnn(y)                                          # B x T x (2*H)
 
         # Split into time and frequency domain.
         H = self.rnn_hidden_size
-        y_time, y_freq = torch.split(y, H, dim=2)                       # B x T x H
+        y_time, y_spec = torch.split(y, H, dim=2)                       # B x T x H
 
         # Time-domain RNN and skip-connection
         y_time = self.time_rnn_out(y_time)                              # B x T x H
@@ -171,9 +171,9 @@ class HSTasNet(nn.Module):
         y_time = y_time + s_time                                        # B x T x H
 
         # Freq-domain RNN and skip-connection
-        y_freq = self.freq_rnn_out(y_freq)                              # B x T x H
-        s_freq = self.freq_skip_fc(s_freq)                              # B x T x H
-        y_freq = y_freq + s_freq                                        # B x T x H
+        y_spec = self.spec_rnn_out(y_spec)                              # B x T x H
+        s_spec = self.spec_skip_fc(s_spec)                              # B x T x H
+        y_spec = y_spec + s_spec                                        # B x T x H
 
         # Time domain mask-estimation.
         m_time = self.time_mask_fc(y_time)                              # B x T x (S*C*M)
@@ -184,38 +184,38 @@ class HSTasNet(nn.Module):
         x_time = x_time.expand(B, S, C, T, M)                           # B x S x C x T x M
         y_time = m_time * x_time                                        # B x S x C x T x M
 
-        # Freq domain mask-estimation.
-        m_freq = self.freq_mask_fc(y_freq)                              # B x T x (S*C*F)
-        S, C, F = self.num_sources, self.num_channels, self.freq_feature_size
-        m_freq = m_freq.view(B, T, S, C, F)                             # B x T x S x C x F
-        m_freq = m_freq.permute(0, 2, 3, 1, 4)                          # B x S x C x T x F 
-        x_freq = x_freq.view(B, 1, C, T, F)                             # B x 1 x C x T x F
-        x_freq = x_freq.expand(B, S, C, T, F)                           # B x S x C x T x F
-        y_freq = m_freq * x_freq                                        # B x S x C x T x F
+        # Frequency domain mask-estimation.
+        m_spec = self.spec_mask_fc(y_spec)                              # B x T x (S*C*F)
+        S, C, F = self.num_sources, self.num_channels, self.spec_feature_size
+        m_spec = m_spec.view(B, T, S, C, F)                             # B x T x S x C x F
+        m_spec = m_spec.permute(0, 2, 3, 1, 4)                          # B x S x C x T x F 
+        x_spec = x_spec.view(B, 1, C, T, F)                             # B x 1 x C x T x F
+        x_spec = x_spec.expand(B, S, C, T, F)                           # B x S x C x T x F
+        y_spec = m_spec * x_spec                                        # B x S x C x T x F
 
         # Time domain decoding.
         y_time = y_time.reshape(B*S*C, T, M)                            # (B*S*C) x T x M
         x_norm = x_norm.view(B, 1, C, T, 1)                             # B x 1 x C x T x 1
         x_norm = x_norm.expand(B, S, C, T, 1)                           # B x S x C x T x 1
         x_norm = x_norm.reshape(B*S*C, T, 1)                            # (B*S*C) x T x 1
-        z_time = self.time_decoder(y_time, x_norm, waveform_length)     # (B*S*C) x L
+        z_time = self.time_decoder(y_time, x_norm)                      # (B*S*C) x L
         z_time = z_time.view(B, S, C, -1)                               # B x S x C x L
 
-        # Freq domain decoding.
-        y_freq = y_freq.reshape(B*S*C, T, F)                            # (B*S*C) x T x F
+        # Frequency domain decoding.
+        y_spec = y_spec.reshape(B*S*C, T, F)                            # (B*S*C) x T x F
         x_angl = x_angl.view(B, 1, C, T, F)                             # B x 1 x C x T x F
         x_angl = x_angl.expand(B, S, C, T, F)                           # B x S x C x T x F
         x_angl = x_angl.reshape(B*S*C, T, F)                            # (B*S*C) x T x F      
-        z_freq = self.freq_decoder(y_freq, x_angl, waveform_length)     # (B*S*C) x L
-        z_freq = z_freq.view(B, S, C, -1)                               # B x S x C x L    
+        z_spec = self.spec_decoder(y_spec, x_angl)                      # (B*S*C) x L
+        z_spec = z_spec.view(B, S, C, -1)                               # B x S x C x L    
 
         # Sum the outputs.
-        out = z_time + z_freq                                           # B x S x C x L
+        out = z_time + z_spec                                           # B x S x C x L
 
         # Pad the output if necessary.
-        if waveform_length:
-            L = x.size(-1)
-            out = ff.pad(out, (0, waveform_length-L), 'constant')     # B x S x C x L_padded             
+        if length:
+            L = out.size(-1)
+            out = ff.pad(out, (0, length-L), 'constant')                # B x S x C x L_padded             
 
         return out
     
@@ -230,10 +230,9 @@ class HSTasNet(nn.Module):
             'time_win_size': self.time_win_size,
             'time_hop_size': self.time_hop_size,
             'time_ftr_size': self.time_ftr_size,
-            'freq_win_size': self.freq_win_size,
-            'freq_hop_size': self.freq_hop_size,
-            'freq_fft_size': self.freq_fft_size,
-            'freq_window': self.freq_window,
+            'spec_win_size': self.spec_win_size,
+            'spec_hop_size': self.spec_hop_size,
+            'spec_fft_size': self.spec_fft_size,
             'rnn_hidden_size': self.rnn_hidden_size,
             }
         
@@ -283,11 +282,12 @@ if __name__ == '__main__':
         time_win_size=1024,
         time_hop_size=512,
         time_ftr_size=200,
-        freq_win_size=1024,
-        freq_hop_size=512,
-        freq_fft_size=1024,
+        spec_win_size=1024,
+        spec_hop_size=512,
+        spec_fft_size=1024,
         rnn_hidden_size=500,
         )
 
-    y = model(x, waveform_length=L)
+    y = model(x, length=L)
     print(f'{y.size() = }')
+    

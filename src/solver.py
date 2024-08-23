@@ -1,5 +1,6 @@
 import torch
-from src.states import load_solver_package_from_path
+from tqdm import tqdm
+from states import load_solver_package_from_path
 
 
 class Solver:
@@ -57,7 +58,10 @@ class Solver:
             print(f'Valid Summary | Epoch {epoch+1:02d} | Loss = {val_loss:.3f}')
 
             # Update scheduler.
-            self.scheduler.step()
+            if self.scheduler is not None:
+                self.scheduler.step()
+                last_lr = self.scheduler.get_last_lr()[0]
+                print(f'Learning rate = {last_lr:.6f}')
 
             # Save model.
             self.trn_loss_history[epoch] = trn_loss
@@ -68,13 +72,14 @@ class Solver:
                 print(f"Best model saved at {self.args['model_path']}")
 
             self.running_epoch += 1
+            print('\n')
 
         return self
 
     def _run_one_trn_epoch(self):
 
         running_loss = 0.0
-        for i, batch_i in enumerate(self.loaders['trn_loader']):
+        for i, batch_i in enumerate(tqdm(self.loaders['trn_loader'], "Training epoch")):
 
             # Get the inputs and targets.
             batch_mixture, batch_sources = batch_i
@@ -82,7 +87,8 @@ class Solver:
             batch_sources = batch_sources.to(self.device)
 
             # Forward pass.
-            batch_outputs = self.model(batch_mixture)
+            batch_length = batch_sources.size(-1)
+            batch_outputs = self.model(batch_mixture, length=batch_length)
 
             # Compute loss.
             loss = self.criterion(batch_outputs, batch_sources)
@@ -99,7 +105,7 @@ class Solver:
     def _run_one_val_epoch(self):        
 
         running_loss = 0.0
-        for i, batch_i in enumerate(self.loaders['val_loader']):
+        for i, batch_i in enumerate(tqdm(self.loaders['val_loader'], "Validating epoch")):
 
             # Get the inputs and targets.
             batch_mixture, batch_sources = batch_i
@@ -107,7 +113,8 @@ class Solver:
             batch_sources = batch_sources.to(self.device)
 
             # Forward pass.
-            batch_outputs = self.model(batch_mixture)
+            batch_length = batch_sources.size(-1)
+            batch_outputs = self.model(batch_mixture, length=batch_length)
 
             # Compute loss.
             loss = self.criterion(batch_outputs, batch_sources)
@@ -127,17 +134,19 @@ class Solver:
     def _run_one_tst_epoch(self):
 
         running_loss = 0.0
-        for i, batch_i in enumerate(self.tst_loader):
+        for i, batch_i in enumerate(tqdm(self.tst_loader, "Testing epoch")):
 
-            inputs, targets = batch_i
-            inputs = inputs.to(self.device)
-            targets = targets.to(self.device)
+            # Get the inputs and targets.
+            batch_mixture, batch_sources = batch_i
+            batch_mixture = batch_mixture.to(self.device)
+            batch_sources = batch_sources.to(self.device)
 
             # Forward pass.
-            outputs = self.model(inputs)
+            batch_length = batch_sources.size(-1)
+            batch_outputs = self.model(batch_mixture, length=batch_length)
 
             # Compute loss.
-            loss = self.criterion(outputs, targets)
+            loss = self.criterion(batch_outputs, batch_sources)
 
             running_loss += loss.item()
 

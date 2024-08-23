@@ -92,8 +92,6 @@ class TimeDecoder(nn.Module):
         self.O = O
         self.M = M
 
-    
-
         self.linear = nn.Linear(M, N)
 
     def forward(self, waveform_encoding, waveform_norm, waveform_length = None):
@@ -119,8 +117,7 @@ class TimeDecoder(nn.Module):
 
         if waveform_length:
             L = x.size(-1)
-            padd_size = (0, waveform_length - L)
-            x = ff.pad(x, padd_size, 'constant')            # B x L_padded     
+            x = ff.pad(x, (0, waveform_length-L), 'constant')            # B x L_padded     
 
         return x
     
