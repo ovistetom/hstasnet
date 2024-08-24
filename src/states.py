@@ -9,7 +9,7 @@ def load_model_package_from_path(path, map_location=torch.device('cpu')):
         map_location (torch.device, optional): The device to move the model to. Defaults to 'cpu'.
 
     Returns:
-        nn.Module: The loaded model.
+        package (dict): A dictionary containing the model's class, arguments, keyword arguments, and state.
     """
 
     package = torch.load(path, map_location=map_location)

@@ -44,6 +44,8 @@ class Solver:
 
         for epoch in range(self.running_epoch, self.num_epochs):
 
+            print('---------------------------------------')
+            
             # Train.
             self.model.train()
             trn_loss = self._run_one_trn_epoch()
@@ -72,7 +74,6 @@ class Solver:
                 print(f"\tBest model saved at {self.args['model_path']}")
 
             self.running_epoch += 1
-            print('\n')
 
         return self
 
@@ -155,7 +156,7 @@ class Solver:
     def _reset(self):
 
         if self.args['continue_from']:
-            print(f"Loading checkpoint model: {self.args['continue_from']}")     
+            print(f"Loading checkpoint solver: {self.args['continue_from']}")     
             package = load_solver_package_from_path(self.args['continue_from'])
             self.model.load_state_dict(package['state_dict'])
             self.optimizer.load_state_dict(package['optimizer_dict'])
@@ -211,3 +212,5 @@ class Solver:
         """
         package = self.serialize()
         torch.save(package, path)
+
+        return path

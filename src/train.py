@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 # Add necessary directories to the path.
 parent_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(parent_directory, 'data'))
-sys.path.append(os.path.join(parent_directory, 'models'))
+sys.path.append(os.path.join(parent_directory, 'output'))
 sys.path.append(os.path.join(parent_directory, 'hstasnet'))
 sys.path.append(os.path.join(parent_directory, 'logs'))
 sys.stdout = open(os.path.join('logs', 'train.log'), 'wt')
@@ -26,14 +26,14 @@ def define_args():
     args = {
         # Training parameters.
         'batch_size': 1,
-        'num_epochs': 3,
+        'num_epochs': 2,
         'learning_rate': 0.001,
         'num_workers': 2,
         'continue_from': None,
 
         # Model parameters.
         'model_name': 'hstasnet',
-        'model_path': os.path.join('models', 'hstasnet.pt'),
+        'model_path': os.path.join('output', 'models', 'hstasnet.pt'),
         'sources': ['bass', 'drums', 'other', 'vocals'],
         'model_args': {
             'num_sources': 4,
@@ -85,7 +85,7 @@ def define_loaders(args):
     return loaders
 
 
-def main(args, train=True):
+def main(args, train = True):
 
     # Define loaders.
     loaders = define_loaders(args)
@@ -111,7 +111,7 @@ def main(args, train=True):
 
 if __name__ == '__main__':
 
-    print("\n*** START TRAINING ***\n")
+    print("*** START TRAINING ***\n")
 
     # Define arguments.
     args = define_args()
@@ -119,4 +119,4 @@ if __name__ == '__main__':
     # Train the model.
     solver = main(args, train=True)
 
-    print("\n*** FINISHED TRAINING ***\n")
+    print("\n*** FINISHED TRAINING ***")
