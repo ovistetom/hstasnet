@@ -134,90 +134,90 @@ class HSTasNet(nn.Module):
         """
 
         # Concatenate channels.
-        B, C, L = waveform.size()
-        x = waveform.view(B*C, L)                                       # (B*C) x L
+        B, C, L = waveform.size()       
+        x = waveform.view(B*C, L)                                               # (B*C) x L
 
-        # Time domain encoding.
-        x_time, x_norm = self.time_encoder(x)                           # (B*C) x T x M
+        # Time domain encoding.     
+        x_time, x_norm = self.time_encoder(x)                                   # (B*C) x T x M
 
-        # Time domain RNN.
-        BC, T, M = x_time.size()
-        x_time = x_time.view(B, C, T, M)                                # B x C x T x M
-        s_time = x_time.permute(0, 2, 1, 3)                             # B x T x C x M
-        s_time = s_time.reshape(B, T, C*M)                              # B x T x (C*M)
-        y_time = self.time_rnn_in(s_time)                               # B x T x H
+        # Time domain RNN.      
+        BC, T, M = x_time.size()        
+        x_time = x_time.view(B, C, T, M)                                        # B x C x T x M
+        s_time = x_time.permute(0, 2, 1, 3)                                     # B x T x C x M
+        s_time = s_time.reshape(B, T, C*M)                                      # B x T x (C*M)
+        y_time = self.time_rnn_in(s_time)                                       # B x T x H
 
-        # specuency domain encoding.
-        x_spec, x_angl = self.spec_encoder(x)                           # (B*C) x T x F
+        # specuency domain encoding.        
+        x_spec, x_angl = self.spec_encoder(x)                                   # (B*C) x T x F
 
-        # specuency domain RNN.
-        BC, T, F = x_spec.size()
-        x_spec = x_spec.view(B, C, T, F)                                # B x C x T x F
-        s_spec = x_spec.permute(0, 2, 1, 3)                             # B x T x C x F
-        s_spec = s_spec.reshape(B, T, C*F)                              # B x T x (C*F)        
-        y_spec = self.spec_rnn_in(s_spec)                               # B x T x H
+        # specuency domain RNN.     
+        BC, T, F = x_spec.size()        
+        x_spec = x_spec.view(B, C, T, F)                                        # B x C x T x F
+        s_spec = x_spec.permute(0, 2, 1, 3)                                     # B x T x C x F
+        s_spec = s_spec.reshape(B, T, C*F)                                      # B x T x (C*F)        
+        y_spec = self.spec_rnn_in(s_spec)                                       # B x T x H
 
-        # Concat time and frequency domain outputs.
-        y = torch.cat((y_time, y_spec), dim=2)                          # B x T x (2*H)
+        # Concat time and frequency domain outputs.     
+        y = torch.cat((y_time, y_spec), dim=2)                                  # B x T x (2*H)
 
-        # Hybrid RNN.
-        y = self.hybrid_rnn(y)                                          # B x T x (2*H)
+        # Hybrid RNN.       
+        y = self.hybrid_rnn(y)                                                  # B x T x (2*H)
 
-        # Split into time and frequency domain.
-        H = self.rnn_hidden_size
-        y_time, y_spec = torch.split(y, H, dim=2)                       # B x T x H
+        # Split into time and frequency domain.     
+        H = self.rnn_hidden_size        
+        y_time, y_spec = torch.split(y, H, dim=2)                               # B x T x H
 
-        # Time-domain RNN and skip-connection
-        y_time = self.time_rnn_out(y_time)                              # B x T x H
-        s_time = self.time_skip_fc(s_time)                              # B x T x H
-        y_time = y_time + s_time                                        # B x T x H
+        # Time-domain RNN and skip-connection       
+        y_time = self.time_rnn_out(y_time)                                      # B x T x H
+        s_time = self.time_skip_fc(s_time)                                      # B x T x H
+        y_time = y_time + s_time                                                # B x T x H
 
-        # Freq-domain RNN and skip-connection
-        y_spec = self.spec_rnn_out(y_spec)                              # B x T x H
-        s_spec = self.spec_skip_fc(s_spec)                              # B x T x H
-        y_spec = y_spec + s_spec                                        # B x T x H
+        # Freq-domain RNN and skip-connection       
+        y_spec = self.spec_rnn_out(y_spec)                                      # B x T x H
+        s_spec = self.spec_skip_fc(s_spec)                                      # B x T x H
+        y_spec = y_spec + s_spec                                                # B x T x H
 
-        # Time domain mask-estimation.
-        m_time = self.time_mask_fc(y_time)                              # B x T x (S*C*M)
+        # Time domain mask-estimation.      
+        m_time = self.time_mask_fc(y_time)                                      # B x T x (S*C*M)
         S, C, M = self.num_sources, self.num_channels, self.time_feature_size
-        m_time = m_time.view(B, T, S, C, M)                             # B x T x S x C x H
-        m_time = m_time.permute(0, 2, 3, 1, 4)                          # B x C x S x T x H
-        x_time = x_time.view(B, 1, C, T, M)                             # B x 1 x C x T x M
-        x_time = x_time.expand(B, S, C, T, M)                           # B x S x C x T x M
-        y_time = m_time * x_time                                        # B x S x C x T x M
+        m_time = m_time.view(B, T, S, C, M)                                     # B x T x S x C x M
+        m_time = m_time.permute(0, 2, 3, 1, 4)                                  # B x S x C x T x M
+        x_time = x_time.view(B, 1, C, T, M)                                     # B x 1 x C x T x M
+        x_time = x_time.expand(B, S, C, T, M)                                   # B x S x C x T x M
+        y_time = m_time * x_time                                                # B x S x C x T x M
 
         # Frequency domain mask-estimation.
-        m_spec = self.spec_mask_fc(y_spec)                              # B x T x (S*C*F)
+        m_spec = self.spec_mask_fc(y_spec)                                      # B x T x (S*C*F)
         S, C, F = self.num_sources, self.num_channels, self.spec_feature_size
-        m_spec = m_spec.view(B, T, S, C, F)                             # B x T x S x C x F
-        m_spec = m_spec.permute(0, 2, 3, 1, 4)                          # B x S x C x T x F 
-        x_spec = x_spec.view(B, 1, C, T, F)                             # B x 1 x C x T x F
-        x_spec = x_spec.expand(B, S, C, T, F)                           # B x S x C x T x F
-        y_spec = m_spec * x_spec                                        # B x S x C x T x F
+        m_spec = m_spec.view(B, T, S, C, F)                                     # B x T x S x C x F
+        m_spec = m_spec.permute(0, 2, 3, 1, 4)                                  # B x S x C x T x F 
+        x_spec = x_spec.view(B, 1, C, T, F)                                     # B x 1 x C x T x F
+        x_spec = x_spec.expand(B, S, C, T, F)                                   # B x S x C x T x F
+        y_spec = m_spec * x_spec                                                # B x S x C x T x F
 
-        # Time domain decoding.
-        y_time = y_time.reshape(B*S*C, T, M)                            # (B*S*C) x T x M
-        x_norm = x_norm.view(B, 1, C, T, 1)                             # B x 1 x C x T x 1
-        x_norm = x_norm.expand(B, S, C, T, 1)                           # B x S x C x T x 1
-        x_norm = x_norm.reshape(B*S*C, T, 1)                            # (B*S*C) x T x 1
-        z_time = self.time_decoder(y_time, x_norm)                      # (B*S*C) x L
-        z_time = z_time.view(B, S, C, -1)                               # B x S x C x L
+        # Time domain decoding.     
+        y_time = y_time.reshape(B*S*C, T, M)                                    # (B*S*C) x T x M
+        x_norm = x_norm.view(B, 1, C, T, 1)                                     # B x 1 x C x T x 1
+        x_norm = x_norm.expand(B, S, C, T, 1)                                   # B x S x C x T x 1
+        x_norm = x_norm.reshape(B*S*C, T, 1)                                    # (B*S*C) x T x 1
+        z_time = self.time_decoder(y_time, x_norm)                              # (B*S*C) x L
+        z_time = z_time.view(B, S, C, -1)                                       # B x S x C x L
 
-        # Frequency domain decoding.
-        y_spec = y_spec.reshape(B*S*C, T, F)                            # (B*S*C) x T x F
-        x_angl = x_angl.view(B, 1, C, T, F)                             # B x 1 x C x T x F
-        x_angl = x_angl.expand(B, S, C, T, F)                           # B x S x C x T x F
-        x_angl = x_angl.reshape(B*S*C, T, F)                            # (B*S*C) x T x F      
-        z_spec = self.spec_decoder(y_spec, x_angl)                      # (B*S*C) x L
-        z_spec = z_spec.view(B, S, C, -1)                               # B x S x C x L    
+        # Frequency domain decoding.        
+        y_spec = y_spec.reshape(B*S*C, T, F)                                    # (B*S*C) x T x F
+        x_angl = x_angl.view(B, 1, C, T, F)                                     # B x 1 x C x T x F
+        x_angl = x_angl.expand(B, S, C, T, F)                                   # B x S x C x T x F
+        x_angl = x_angl.reshape(B*S*C, T, F)                                    # (B*S*C) x T x F      
+        z_spec = self.spec_decoder(y_spec, x_angl)                              # (B*S*C) x L
+        z_spec = z_spec.view(B, S, C, -1)                                       # B x S x C x L    
 
-        # Sum the outputs.
-        out = z_time + z_spec                                           # B x S x C x L
+        # Sum the outputs.      
+        out = z_time + z_spec                                                   # B x S x C x L
 
-        # Pad the output if necessary.
+        # Pad the output if necessary.      
         if length:
             L = out.size(-1)
-            out = ff.pad(out, (0, length-L), 'constant')                # B x S x C x L_padded             
+            out = ff.pad(out, (0, length-L), 'constant')                        # B x S x C x L_padded             
 
         return out
     
