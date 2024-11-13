@@ -3,3 +3,7 @@
 A PyTorch implementation of "Real-time Low-latency Music Source Separation using Hybrid Spectrogram-TasNet", published in ICASSP2024, by S. Venkatesh, A. Benilov, P. Coleman and F. Roskam.
 
 Made for practice, currently incomplete.
+
+Create a conda environment then install the dependencies:  
+`conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia`  
+`conda install -c conda-forge -y -f requirements.txt`

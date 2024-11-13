@@ -58,13 +58,12 @@ def preprocess_musdb(database_path_src, database_path_dst, test_subset):
     Preprocess the MUSDB18 dataset.
 
     Args:
-        database_path_src (str): The path to the MUSDB18 dataset.
-        database_path_dst (str): The path to the preprocessed MUSDB18 dataset.
+        database_path_src (str): The path to the MUSDB18 dataset (with STEM files).
+        database_path_dst (str): The path to the preprocessed MUSDB18 dataset (with MP4 files).
     """
 
     # Create the destination folder if it doesn't exist.
-    if not os.path.exists(database_path_dst):
-        os.makedirs(database_path_dst)
+    os.makedirs(database_path_dst, exist_ok=True)
 
     # Iterate over the folders in the source folder.
     for subset_name in ['test', 'train']:
@@ -110,10 +109,13 @@ def preprocess_musdb(database_path_src, database_path_dst, test_subset):
                         file_path_dst = os.path.join(song_path_dst, f'{STEM_DICT[i]}.wav')
                         sf.write(file_path_dst, data=segment_j.T, samplerate=sr, format='wav')
 
+    print(f"Successfully preprocessed MUSDB18 dataset into '{database_path_dst}'.")
+    return
+
 
 def split_test_and_valid(database_path, subset_size=20):
     """
-    Split a random subset from the MUSDB18 test set.
+    Split the MUSDB18 test set into test and validation sets.
     
     Args:
         database_path (str): The path to the MUSDB18 dataset.
@@ -125,9 +127,11 @@ def split_test_and_valid(database_path, subset_size=20):
 
     database_test_path_src = os.path.join(database_path, 'test')
     database_test_list = os.listdir(database_test_path_src)
-    subset = random.sample(database_test_list, subset_size)
+    test_subset = random.sample(database_test_list, subset_size)
 
-    return subset
+    print(f"Successfully split test set (test size = {subset_size}, valid size = {len(database_test_list) - subset_size}).")
+
+    return test_subset
 
 if __name__ == '__main__':
 
