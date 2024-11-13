@@ -88,8 +88,7 @@ class SpecDecoder(nn.Module):
                  window: str = 'hamming',
                  device=torch.device('cpu'),
                  ):
-        """
-        Initialize a new FreqEncoder object.
+        """ Initialize a new FreqEncoder object.
 
         Args:
             n_win (int, optional): The window size. Defaults to 1024.
@@ -129,8 +128,7 @@ class SpecDecoder(nn.Module):
         
 
     def forward(self, spec_magn, spec_angl, waveform_length=None):
-        """
-        Forward pass through the model.
+        """ Forward pass through the model.
 
         Args:
             spec_magn (torch.Tensor): [*, T, F]

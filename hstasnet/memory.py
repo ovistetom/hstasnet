@@ -4,8 +4,7 @@ import torch.nn.functional as ff
 
 
 class Memory(nn.Module):
-    """
-    A class implementing a memory RNN.
+    """ A class implementing a memory RNN.
 
     The model consists of two GRUs with an identity skip connection added to the
     output of the second GRU.
@@ -51,8 +50,7 @@ class Memory(nn.Module):
         
 
     def forward(self, x):
-        """
-        Forward pass through the model.
+        """ Forward pass through the model.
 
         Args:
             x (torch.Tensor):   [B, H_in]

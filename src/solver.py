@@ -4,8 +4,7 @@ from states import load_solver_package_from_path
 
 
 class Solver:
-    """
-    A class to train and evaluate a PyTorch model.
+    """ A class to train and evaluate a PyTorch model.
 
     Args:
         model (nn.Module): The PyTorch model to be trained.
@@ -71,7 +70,7 @@ class Solver:
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
                 self.model.save_to_path(self.args['model_path'])
-                print(f"\tBest model saved at {self.args['model_path']}")
+                print(f"Best model saved at '{self.args['model_path']}'.")
 
             self.running_epoch += 1
 

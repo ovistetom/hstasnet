@@ -9,8 +9,7 @@ SAMPLE_RATE = 44100
 
 
 class MUSDB18Dataset(Dataset):
-    """
-    MUSDB18 dataset.
+    """ Dataset class for the MUSDB18 dataset.
 
     Args:
         root (str): The root directory of the dataset.
@@ -43,11 +42,11 @@ class MUSDB18Dataset(Dataset):
             wav, sr = torchaudio.load(track)
 
             if sr != SAMPLE_RATE:
-                raise ValueError(f"Expected sample rate {SAMPLE_RATE}, but got {sr}")
+                raise ValueError(f"Expected sample rate {SAMPLE_RATE}, but got {sr}.")
             if num_frames is None:
                 num_frames = wav.shape[-1]
             elif wav.shape[-1] != num_frames:
-                raise ValueError("Value 'num_frames' does not match across sources")
+                raise ValueError("Value 'num_frames' does not match across sources.")
             
             wav_sources.append(wav)
         
@@ -66,8 +65,7 @@ class MUSDB18Dataset(Dataset):
         return sorted(song_names)
     
     def __getitem__(self, n: int):
-            """
-            Load the n-th sample from the dataset.
+            """ Load the n-th sample from the dataset.
 
             Args:
                 n (int): The index of the sample to be loaded.

@@ -136,12 +136,11 @@ class HSTasNet(nn.Module):
             )
 
     def forward(self, waveform, length = None):
-        """
-        Forward pass through the model.
+        """ Forward pass through the model.
         
         Args:
             waveform (torch.Tensor): [B, C, L]
-            waveform_length (int, optional): The original length of the waveform.
+            length (int, optional): The original length of the waveform.
 
         Returns:
             out (torch.Tensor): [B, S, C, L]
@@ -255,7 +254,7 @@ class HSTasNet(nn.Module):
         return args, kwargs
     
     def serialize(self):
-        """Serialize the model into a dictionary.
+        """ Serialize the model into a dictionary.
         
         Args:
             model (nn.Module): The model to serialize.
@@ -278,7 +277,7 @@ class HSTasNet(nn.Module):
         return package        
     
     def save_to_path(self, path):
-        """Save the model to a file path.
+        """ Save the model to a file path.
 
         Args:
             path (str): The file path to save the model to.

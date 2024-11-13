@@ -14,8 +14,7 @@ class TimeEncoder(nn.Module):
                  M: int = 1500,
                  device=torch.device('cpu'),
                  ):
-        """
-        Initialize a new TimeEncoder object.
+        """ Initialize a new TimeEncoder object.
 
         Args:
             N (int, optional): The number of channels. Defaults to 1024.
@@ -45,8 +44,7 @@ class TimeEncoder(nn.Module):
         self.sigmoid = torch.sigmoid
 
     def forward(self, waveform):
-        """
-        Forward pass through the model.
+        """ Forward pass through the model.
         
         Args:
             waveform (torch.Tensor): [B, L]
@@ -81,8 +79,7 @@ class TimeDecoder(nn.Module):
                  M: int = 1500,
                  device=torch.device('cpu'),
                  ):
-        """
-        Initialize a new TimeDecoder object.
+        """ Initialize a new TimeDecoder object.
 
         Args:
             N (int, optional): The number of channels. Defaults to 1024.
@@ -103,8 +100,7 @@ class TimeDecoder(nn.Module):
             )
 
     def forward(self, waveform_encoding, waveform_norm, waveform_length = None):
-        """
-        Forward pass through the model.
+        """ Forward pass through the model.
 
         Args:
             waveform_encoding (torch.Tensor): [B, T, M]
@@ -131,8 +127,7 @@ class TimeDecoder(nn.Module):
     
 
 def overlap_add(frames, overlap_ratio=2):
-    """
-    Overlap-adds a batch of frames back into a batch of signals.
+    """ Overlap-adds a batch of frames back into a batch of signals.
 
     Args:
         frames (torch.Tensor): Batch of frames, size [batch_size, num_frames, frame_size].

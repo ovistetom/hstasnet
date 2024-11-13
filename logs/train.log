@@ -1,3 +1,8 @@
 *** START TRAINING ***
 
 ---------------------------------------
+Train Summary | Epoch 01 | Loss = 7.678
+Valid Summary | Epoch 01 | Loss = 2.355
+	Learning rate = 0.001000
+	Best model saved at out\models\hstasnet.pt
+---------------------------------------

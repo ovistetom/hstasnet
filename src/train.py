@@ -20,8 +20,7 @@ from hstasnet import HSTasNet
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def define_args():
-    """
-    Define the default arguments.
+    """ Define the default arguments.
 
     Returns:
         args (dict): A dictionary containing the default arguments.
@@ -55,8 +54,7 @@ def define_args():
 
 
 def define_loaders(args):
-    """
-    Define DataLoaders for the training, validation, and test sets.
+    """ Define DataLoaders for the training, validation, and test sets.
 
     Args:
         args (dict): A dictionary containing the arguments.
