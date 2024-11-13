@@ -20,6 +20,7 @@ class HSTasNet(nn.Module):
                  spec_fft_size: int = 1024,
                  rnn_hidden_size: int = 1000,
                  rnn_num_layers: int = 1,
+                 device=torch.device('cpu'),
                  ):
 
         super().__init__()
@@ -49,34 +50,40 @@ class HSTasNet(nn.Module):
             N=time_win_size,
             O=time_hop_size,
             M=time_ftr_size,
+            device=device,
             )
 
         self.time_decoder = TimeDecoder(
             N=time_win_size,
             O=time_hop_size,
             M=time_ftr_size,
+            device=device,
             )
 
         self.time_rnn_in = Memory(
             input_size=num_channels*time_feature_size,
             hidden_size=rnn_hidden_size,
             num_layers=rnn_num_layers,
+            device=device,
             )
 
         self.time_skip_fc = nn.Linear(
             in_features=num_channels*time_feature_size,
             out_features=rnn_hidden_size,
+            device=device,
             )
 
         self.time_rnn_out = Memory(
             input_size=rnn_hidden_size,
             hidden_size=rnn_hidden_size,
             num_layers=1,
+            device=device,
             )        
 
         self.time_mask_fc = nn.Linear(
             in_features=rnn_hidden_size,
             out_features=num_channels*num_sources*time_feature_size,
+            device=device,
             )
 
         self.spec_encoder = SpecEncoder(
@@ -84,6 +91,7 @@ class HSTasNet(nn.Module):
             n_hop=spec_hop_size,
             n_fft=spec_fft_size,
             window='hamming',
+            device=device,
             )
         
         self.spec_decoder = SpecDecoder(
@@ -91,34 +99,40 @@ class HSTasNet(nn.Module):
             n_hop=spec_hop_size,
             n_fft=spec_fft_size,
             window='hamming',
+            device=device,
             )
 
         self.spec_rnn_in = Memory(
             input_size=num_channels*spec_feature_size,
             hidden_size=rnn_hidden_size,
             num_layers=rnn_num_layers,
+            device=device,
             )
         
         self.spec_skip_fc = nn.Linear(
             in_features=num_channels*spec_feature_size,
             out_features=rnn_hidden_size,
+            device=device,
             )        
         
         self.spec_rnn_out = Memory(
             input_size=rnn_hidden_size,
             hidden_size=rnn_hidden_size,
             num_layers=1,
+            device=device,
             )        
         
         self.spec_mask_fc = nn.Linear(
             in_features=rnn_hidden_size,
             out_features=num_channels*num_sources*spec_feature_size,
+            device=device,
             )    
 
         self.hybrid_rnn = Memory(
             input_size=2*rnn_hidden_size,
             hidden_size=2*rnn_hidden_size,
             num_layers=rnn_num_layers,
+            device=device,
             )
 
     def forward(self, waveform, length = None):
@@ -274,8 +288,9 @@ class HSTasNet(nn.Module):
 
 if __name__ == '__main__':
 
+    DEVICE = torch.device('cpu')
     B, C, L, S = 10, 2, 100000, 4
-    x = torch.randn(B, C, L)
+    x = torch.randn(B, C, L, device=DEVICE)
     print(f'{x.size() = }')
 
     model = HSTasNet(
@@ -289,6 +304,7 @@ if __name__ == '__main__':
         spec_fft_size=1024,
         rnn_hidden_size=500,
         rnn_num_layers=1,
+        device=DEVICE,
         )
 
     y = model(x, length=L)

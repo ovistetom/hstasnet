@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 # Add necessary directories to the path.
 parent_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(parent_directory, 'data'))
-sys.path.append(os.path.join(parent_directory, 'output'))
+sys.path.append(os.path.join(parent_directory, 'out'))
 sys.path.append(os.path.join(parent_directory, 'hstasnet'))
 sys.path.append(os.path.join(parent_directory, 'logs'))
 sys.stdout = open(os.path.join('logs', 'train.log'), 'wt')
@@ -15,6 +15,9 @@ import losses
 from solver import Solver
 from dataset import MUSDB18Dataset
 from hstasnet import HSTasNet
+
+
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def define_args():
     """
@@ -25,7 +28,7 @@ def define_args():
     """
     args = {
         # Training parameters.
-        'batch_size': 1,
+        'batch_size': 4,
         'num_epochs': 2,
         'learning_rate': 0.001,
         'num_workers': 2,
@@ -33,12 +36,11 @@ def define_args():
 
         # Model parameters.
         'model_name': 'hstasnet',
-        'model_path': os.path.join('output', 'models', 'hstasnet.pt'),
+        'model_path': os.path.join('out', 'models', 'hstasnet.pt'),
         'sources': ['bass', 'drums', 'other', 'vocals'],
         'model_args': {
             'num_sources': 4,
             'num_channels': 2,
-            'time_win_size': 1024,
             'time_win_size': 1024,
             'time_hop_size': 512,
             'time_ftr_size': 1500,
@@ -103,7 +105,7 @@ def main(args, train = True):
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
 
     # Define solver.
-    solver = Solver(model, criterion, optimizer, scheduler, loaders, args)
+    solver = Solver(model, criterion, optimizer, scheduler, loaders, args, device=DEVICE)
     solver = solver.train() if train else solver
 
     return solver

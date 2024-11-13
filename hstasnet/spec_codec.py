@@ -11,6 +11,7 @@ class SpecEncoder(nn.Module):
                  n_hop: int = 512,
                  n_fft: int = 1024,
                  window: str = 'hamming',
+                 device=torch.device('cpu'),
                  ):
         """
         Initialize a new FreqEncoder object.
@@ -51,7 +52,7 @@ class SpecEncoder(nn.Module):
             normalized=True,
             onesided=True,
             center=False,
-            )        
+            ).to(device)        
 
     def forward(self, waveform):
         """
@@ -85,6 +86,7 @@ class SpecDecoder(nn.Module):
                  n_hop: int = 512,
                  n_fft: int = 1024,
                  window: str = 'hamming',
+                 device=torch.device('cpu'),
                  ):
         """
         Initialize a new FreqEncoder object.
@@ -123,7 +125,7 @@ class SpecDecoder(nn.Module):
             normalized=True,
             onesided=True,
             center=False,
-            )        
+            ).to(device)        
         
 
     def forward(self, spec_magn, spec_angl, waveform_length=None):

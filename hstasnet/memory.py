@@ -16,6 +16,7 @@ class Memory(nn.Module):
                  hidden_size, 
                  num_layers=1,
                  dropout=0.0,
+                 device=torch.device('cpu'),
                  ):
         """
         Args:
@@ -35,7 +36,8 @@ class Memory(nn.Module):
             hidden_size=hidden_size,
             num_layers=num_layers,
             batch_first=True,
-            dropout=dropout,            
+            dropout=dropout, 
+            device=device, 
             )
 
         self.rnn2 = nn.GRU(
@@ -44,6 +46,7 @@ class Memory(nn.Module):
             num_layers=num_layers,
             batch_first=True,
             dropout=dropout,
+            device=device, 
             )
         
 

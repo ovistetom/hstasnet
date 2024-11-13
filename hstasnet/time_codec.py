@@ -12,6 +12,7 @@ class TimeEncoder(nn.Module):
                  N: int = 1024,
                  O: int = 512,
                  M: int = 1500,
+                 device=torch.device('cpu'),
                  ):
         """
         Initialize a new TimeEncoder object.
@@ -31,11 +32,13 @@ class TimeEncoder(nn.Module):
         self.conv = nn.Linear(
             in_features=N,
             out_features=M,
+            device=device, 
             )
 
         self.gate = nn.Linear(
             in_features=N,
             out_features=M,
+            device=device,         
             )   
                  
         self.relu = ff.relu
@@ -76,6 +79,7 @@ class TimeDecoder(nn.Module):
                  N: int = 1024,
                  O: int = 512,
                  M: int = 1500,
+                 device=torch.device('cpu'),
                  ):
         """
         Initialize a new TimeDecoder object.
@@ -92,7 +96,11 @@ class TimeDecoder(nn.Module):
         self.O = O
         self.M = M
 
-        self.linear = nn.Linear(M, N)
+        self.linear = nn.Linear(
+            in_features=M,
+            out_features=N,
+            device=device, 
+            )
 
     def forward(self, waveform_encoding, waveform_norm, waveform_length = None):
         """
