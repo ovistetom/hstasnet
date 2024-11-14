@@ -1,4 +1,5 @@
 import torch
+import pickle
 from tqdm import tqdm
 from states import load_solver_package_from_path
 
@@ -73,6 +74,10 @@ class Solver:
                 print(f"Best model saved at '{self.args['model_path']}'.")
 
             self.running_epoch += 1
+        
+        self.save_to_path(self.args['solver_path'])
+        print(f"Solver saved at '{self.args['solver_path']}'.")
+        print('---------------------------------------')
 
         return self
 
@@ -91,7 +96,7 @@ class Solver:
             batch_outputs = self.model(batch_mixture, length=batch_length)
 
             # Compute loss.
-            loss = self.criterion(batch_outputs, batch_sources)
+            loss = self.criterion(batch_outputs, batch_sources, reduction='mean')
 
             # Backward pass and optimization.
             self.optimizer.zero_grad()
@@ -117,8 +122,7 @@ class Solver:
             batch_outputs = self.model(batch_mixture, length=batch_length)
 
             # Compute loss.
-            loss = self.criterion(batch_outputs, batch_sources)
-
+            loss = self.criterion(batch_outputs, batch_sources, reduction='mean')
             running_loss += loss.item()
 
         return running_loss    
@@ -146,8 +150,7 @@ class Solver:
             batch_outputs = self.model(batch_mixture, length=batch_length)
 
             # Compute loss.
-            loss = self.criterion(batch_outputs, batch_sources)
-
+            loss = self.criterion(batch_outputs, batch_sources, reduction='mean')
             running_loss += loss.item()
 
         return running_loss        
@@ -155,61 +158,63 @@ class Solver:
     def _reset(self):
 
         if self.args['continue_from']:
-            print(f"Loading checkpoint solver: {self.args['continue_from']}")     
+            print('---------------------------------------')
+            print(f"Loading checkpoint solver: '{self.args['continue_from']}'.")     
             package = load_solver_package_from_path(self.args['continue_from'])
-            self.model.load_state_dict(package['state_dict'])
+            self.model.load_state_dict(package['model_state_dict'])
             self.optimizer.load_state_dict(package['optimizer_dict'])
             self.scheduler.load_state_dict(package['scheduler_dict'])
-            self.trn_loss_history[:self.running_epoch] = package['trn_loss_history'][:self.running_epoch]
-            self.val_loss_history[:self.running_epoch] = package['val_loss_history'][:self.running_epoch]
             self.running_epoch = package['running_epoch']
+            self.trn_loss_history[:self.running_epoch] = torch.Tensor(package['trn_loss_history'][:self.running_epoch]).to(self.device)
+            self.val_loss_history[:self.running_epoch] = torch.Tensor(package['val_loss_history'][:self.running_epoch]).to(self.device)
         else:
             self.running_epoch = 0
 
         self.prev_val_loss = float('inf')
         self.best_val_loss = float('inf')
 
-    def _init_args_kwargs(self):
+    # def _init_args_kwargs(self):
 
-        args = [
-            ]
+    #     args = [
+    #         ]
 
-        kwargs = {
-            'device': self.device,
-            }
+    #     kwargs = {
+    #         'device': self.device,
+    #         }
 
-        return args, kwargs
+    #     return args, kwargs
     
     def serialize(self):
-        """
-        Serialize the solver into a dictionary.
+        """ Serialize the solver into a dictionary.
         
         Args:    
             solver (Solver): The solver to serialize.
 
         Returns:
-            dict: A dictionary containing the solver's class, arguments, keyword arguments, and state.
+            dict: Dictionary containing the solver's class, arguments, keyword arguments, and state.
         """
 
         package = {
-            'state_dict': self.model.state_dict(),
+            'model_state_dict': self.model.state_dict(),
             'optimizer_dict': self.optimizer.state_dict(),
             'scheduler_dict': self.scheduler.state_dict(),
             'running_epoch': self.running_epoch,
-            'trn_loss_history': self.trn_loss_history,
-            'val_loss_history': self.val_loss_history,
+            'trn_loss_history': self.trn_loss_history.tolist(),
+            'val_loss_history': self.val_loss_history.tolist(),
             }
         
         return package
     
-    def save_to_path(self, path):
-        """
-        Save the solver to a given file path.
+    def save_to_path(self, solver_path):
+        """ Save the solver to a given file path.
 
         Args:
-            path (str): The file path to save the solver to.
+            solver_path (str): The file path to save the solver to.
+        Returns:
+            solver_path (str): The file path to save the solver to.
         """
-        package = self.serialize()
-        torch.save(package, path)
+        solver_package = self.serialize()
+        with open(solver_path, 'wb') as solver_file: 
+            pickle.dump(solver_package, solver_file)
 
-        return path
+        return solver_path

@@ -1,8 +1,12 @@
 *** START TRAINING ***
 
+Loading checkpoint solver: out\solvers\hstasnet.pkl
 ---------------------------------------
-Train Summary | Epoch 01 | Loss = 7.678
-Valid Summary | Epoch 01 | Loss = 2.355
+Train Summary | Epoch 02 | Loss = 0.051
+Valid Summary | Epoch 02 | Loss = 1.667
 	Learning rate = 0.001000
-	Best model saved at out\models\hstasnet.pt
+Best model saved at 'out\models\hstasnet.pt'.
+Solver saved at 'out\solvers\hstasnet1.pkl'.
 ---------------------------------------
+
+*** FINISHED TRAINING ***

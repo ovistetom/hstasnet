@@ -14,7 +14,7 @@ class HSTasNet(nn.Module):
                  num_channels,
                  time_win_size: int = 1024,
                  time_hop_size: int = 512,
-                 time_ftr_size: int = 1500,
+                 time_ftr_size: int = 1000,
                  spec_win_size: int = 1024,
                  spec_hop_size: int = 512,
                  spec_fft_size: int = 1024,
@@ -160,10 +160,10 @@ class HSTasNet(nn.Module):
         s_time = s_time.reshape(B, T, C*M)                                      # B x T x (C*M)
         y_time = self.time_rnn_in(s_time)                                       # B x T x H
 
-        # specuency domain encoding.        
+        # Frequency domain encoding.        
         x_spec, x_angl = self.spec_encoder(x)                                   # (B*C) x T x F
 
-        # specuency domain RNN.     
+        # Frequency domain RNN.     
         BC, T, F = x_spec.size()        
         x_spec = x_spec.view(B, C, T, F)                                        # B x C x T x F
         s_spec = x_spec.permute(0, 2, 1, 3)                                     # B x T x C x F
@@ -180,12 +180,12 @@ class HSTasNet(nn.Module):
         H = self.rnn_hidden_size        
         y_time, y_spec = torch.split(y, H, dim=2)                               # B x T x H
 
-        # Time-domain RNN and skip-connection       
+        # Time-domain RNN and skip-connection. 
         y_time = self.time_rnn_out(y_time)                                      # B x T x H
         s_time = self.time_skip_fc(s_time)                                      # B x T x H
         y_time = y_time + s_time                                                # B x T x H
 
-        # Freq-domain RNN and skip-connection       
+        # Freq-domain RNN and skip-connection.
         y_spec = self.spec_rnn_out(y_spec)                                      # B x T x H
         s_spec = self.spec_skip_fc(s_spec)                                      # B x T x H
         y_spec = y_spec + s_spec                                                # B x T x H
@@ -260,7 +260,7 @@ class HSTasNet(nn.Module):
             model (nn.Module): The model to serialize.
             
         Returns:
-            package (dict): A dictionary containing the model's class, arguments, keyword arguments, and state.
+            package (dict): Dictionary containing the model's class, arguments, keyword arguments, and state.
         """
 
         klass = self.__class__
@@ -276,14 +276,19 @@ class HSTasNet(nn.Module):
         
         return package        
     
-    def save_to_path(self, path):
+    def save_to_path(self, model_path):
         """ Save the model to a file path.
 
         Args:
-            path (str): The file path to save the model to.
+            model_path (str): The file path to save the model to.
+        Returns:
+            model_path (str): The file path to save the model to.                    
         """
-        package = self.serialize()
-        torch.save(package, path)
+        model_package = self.serialize()
+        torch.save(model_package, model_path)
+
+        return model_path
+
 
 if __name__ == '__main__':
 

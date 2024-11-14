@@ -1,4 +1,5 @@
 import torch
+import pickle
 
 
 def load_model_package_from_path(path, map_location=torch.device('cpu')):
@@ -9,7 +10,7 @@ def load_model_package_from_path(path, map_location=torch.device('cpu')):
         map_location (torch.device, optional): The device to move the model to. Defaults to 'cpu'.
 
     Returns:
-        package (dict): A dictionary containing the model's class, arguments, keyword arguments, and state.
+        package (dict): Dictionary containing the model's class, arguments, keyword arguments, and state.
     """
 
     package = torch.load(path, map_location=map_location)
@@ -50,17 +51,18 @@ def load_model_from_package(package):
 
     return model
 
-def load_solver_package_from_path(path, map_location=torch.device('cpu')):
+def load_solver_package_from_path(solver_path):
     """ Load a solver from a file path.
     
     Args:
-        path (str): The file path to load the solver from.
+        solver_path (str): The file path to load the solver from.
         map_location (torch.device, optional): The device to move the solver to. Defaults to 'cpu'.
 
     Returns:
         package (dict): A dictionary containing the solver's class, arguments, keyword arguments, and state.
     """
 
-    package = torch.load(path, map_location=map_location)
-
-    return package
+    with open(solver_path, 'rb') as solver_file: 
+        solver_package = pickle.load(solver_file)
+    
+    return solver_package
