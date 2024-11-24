@@ -1,6 +1,8 @@
+from matplotlib.pyplot import stem
 import numpy as np
 import soundfile as sf
 import torch
+import torchaudio
 import torchaudio.transforms as tt
 import os
 import sys
@@ -17,12 +19,11 @@ sys.path.append(os.path.join(os.path.dirname((os.path.dirname(__file__))), 'data
 STEM_DICT = {0: 'mixture', 1: 'drums', 2: 'bass', 3: 'other', 4: 'vocals'}
 
 
-def segment_stem_array(stem_array, segment_length_in_s=20.0, fade_length_in_s=1.0, sample_rate=44100):
-    """
-    Segment an audio array into segments of a given length. Apply fade-in and fade-out to the segments.
+def segment_audio_array(audio_array, segment_length_in_s=20.0, fade_length_in_s=1.0, sample_rate=44100):
+    """ Segment an audio array into segments of a given length. Apply fade-in and fade-out to the segments.
 
     Args:
-        stem_array (np.ndarray): The audio array to segment.
+        audio_array (np.ndarray): The audio array to segment.
         segment_length_in_s (float, optional): The length of each segment in seconds. Defaults to 20.0.
         fade_length_in_s (float, optional): The length of the fade in and out in seconds. Defaults to 1.0.
         sample_rate (int, optional): The sample rate of the audio. Defaults to 44100.
@@ -31,8 +32,10 @@ def segment_stem_array(stem_array, segment_length_in_s=20.0, fade_length_in_s=1.
         segments (np.ndarray): The segmented audio array.
     """
     
+    assert audio_array.ndim == 3, f"Expected 3D array, got {audio_array.ndim}D array."
+
     # Segment the audio array.
-    num_stems, num_channels, audio_length = stem_array.shape
+    num_stems, num_channels, audio_length = audio_array.shape
     segment_length = int(sample_rate * segment_length_in_s)
     num_segments = audio_length // segment_length
 
@@ -41,7 +44,7 @@ def segment_stem_array(stem_array, segment_length_in_s=20.0, fade_length_in_s=1.
     for i in range(num_segments):
         start = i * segment_length
         end = (i + 1) * segment_length
-        segments[:, i, :, :] = stem_array[:, :, start:end]
+        segments[:, i, :, :] = audio_array[:, :, start:end]
 
     # Apply fade-in and fade-out.
     fade_length = int(sample_rate * fade_length_in_s)
@@ -53,13 +56,17 @@ def segment_stem_array(stem_array, segment_length_in_s=20.0, fade_length_in_s=1.
     return segments
 
 
-def preprocess_musdb(database_path_src, database_path_dst, test_subset):
-    """
-    Preprocess the MUSDB18 dataset.
+def preprocess_musdb18(database_path_src, database_path_dst, test_subset, hq=False):
+    """ Preprocess the MUSDB18 dataset.
 
     Args:
-        database_path_src (str): The path to the MUSDB18 dataset (with STEM files).
-        database_path_dst (str): The path to the preprocessed MUSDB18 dataset (with MP4 files).
+        database_path_src (str): Path to the MUSDB18 dataset (with STEM files).
+        database_path_dst (str): Path to the preprocessed MUSDB18 dataset (with WAV files).
+        test_subset (list[str]): List of the tracks in the `test` subset.
+        hq (bool, optional): Whether to use MUSDB18HQ version. Defaults to False.
+    
+    Returns:
+        database_path_dst (str): Path to the preprocessed MUSDB18 dataset (with WAV files).
     """
 
     # Create the destination folder if it doesn't exist.
@@ -69,9 +76,10 @@ def preprocess_musdb(database_path_src, database_path_dst, test_subset):
     for subset_name in ['test', 'train']:
 
         subset_path_src = os.path.join(database_path_src, subset_name)
+        song_list = os.listdir(subset_path_src)
 
         # Iterate over the files in the folder.
-        for song_name in tqdm(os.listdir(subset_path_src), f"Processing '{subset_name}'"):
+        for k, song_name in enumerate(tqdm(song_list, f"Processing '{subset_name}' set")):
 
             file_path_src = os.path.join(subset_path_src, song_name)
 
@@ -84,45 +92,136 @@ def preprocess_musdb(database_path_src, database_path_dst, test_subset):
                 subset_path_dst = os.path.join(database_path_dst, 'valid')
             os.makedirs(subset_path_dst, exist_ok=True)
 
-            # Check if the file is a .mp4 file.
-            if song_name.endswith('.mp4'):
+            if not hq:
+                # Check if the file is a .stem.mp4 file.
+                if song_name.endswith('.stem.mp4'):
 
-                song_name_dst = song_name[:-9]
+                    # Load the STEM file.
+                    stems_array, sr = stempeg.read_stems(file_path_src)
+                    stems_array = stems_array.transpose(0, 2, 1)
+        
+                    # Segment the audio array.
+                    segments = segment_audio_array(stems_array)
 
-                # Load the STEM file.
-                stem_array, sr = stempeg.read_stems(file_path_src)
-                stem_array = stem_array.transpose(0, 2, 1)
-    
-                # Process the STEM array.
-                segments = segment_stem_array(stem_array)
-                segments[0] = segments[1:].sum(axis=0)
+                    # Re-create the mixture file by summing the sources.
+                    segments[0] = segments[1:].sum(axis=0)
 
-                # Iterate over the sources.
-                for i, stem_i in enumerate(segments):
+                    # Iterate over the stems (sources or mixture).
+                    for i, stem_i in enumerate(segments):
 
-                    # Iterate over the segments.
-                    for j, segment_j in enumerate(stem_i):
-                    
-                        # Write the segment to the destination folder.
-                        song_path_dst = os.path.join(subset_path_dst, f'{song_name_dst} ({j:02})')
-                        os.makedirs(song_path_dst, exist_ok=True)
-                        file_path_dst = os.path.join(song_path_dst, f'{STEM_DICT[i]}.wav')
-                        sf.write(file_path_dst, data=segment_j.T, samplerate=sr, format='wav')
+                        # Iterate over the segments.
+                        for j, segment_j in enumerate(stem_i):
+                        
+                            # Write the segment to the destination folder.
+                            song_path_dst = os.path.join(subset_path_dst, f'track_{k:03}{j:02}')
+                            os.makedirs(song_path_dst, exist_ok=True)
+                            file_path_dst = os.path.join(song_path_dst, f'{STEM_DICT[i]}.wav')
+                            sf.write(file_path_dst, data=segment_j.T, samplerate=sr, format='wav')
+
+            else:
+                # Check if the file is a .wav file.
+                if song_name.endswith('.wav'):
+
+                    # Load the WAV stem files into an array.
+                    stems_tensor_list = []
+                    for i in range(5):
+                        song_path = os.path.join(subset_path_src, song_name)
+                        source_i_file_name = os.path.join(song_path, f'{STEM_DICT[i]}.wav')
+                        source_i_tensor, sr = torchaudio.load(source_i_file_name)
+                        stems_tensor_list.append(source_i_tensor)
+                    stems_tensor = torch.stack(stems_tensor_list)
+                    stems_array = stems_tensor.numpy()
+        
+                    # Segment the audio array.
+                    segments = segment_audio_array(stems_array)
+
+                    # Re-create the mixture file by summing the sources.
+                    segments[0] = segments[1:].sum(axis=0)
+
+                    # Iterate over the stems (sources or mixture).
+                    for i, stem_i in enumerate(segments):
+
+                        # Iterate over the segments.
+                        for j, segment_j in enumerate(stem_i):
+                        
+                            # Write the segment to the destination folder.
+                            song_path_dst = os.path.join(subset_path_dst, f'track_{k:04}{j:02}')
+                            os.makedirs(song_path_dst, exist_ok=True)
+                            file_path_dst = os.path.join(song_path_dst, f'{STEM_DICT[i]}.wav')
+                            sf.write(file_path_dst, data=segment_j.T, samplerate=sr, format='wav')                
 
     print(f"Successfully preprocessed MUSDB18 dataset into '{database_path_dst}'.")
-    return
+    return database_path_dst
+
+
+def data_augmentation_musdb18(database_path_src, database_path_dst, augmentation_ratio=2):
+    """ Apply data augmentation to the MUSDB18 dataset, creating new cacophonic audio files.
+
+
+    Args:
+        database_path_src (str): Path to the preprocessed MUSDB18 dataset (with WAV files).
+        database_path_dst (str): Path to the data-augmented MUSDB18 dataset (with WAV files).
+        augmentation_ratio (int): Ratio of new audio files to create (e.g. '2' doubles the amount of files per subset).
+
+    Returns:
+        database_path_dst (str): Path to the data-augmented MUSDB18 dataset (with WAV files).
+    """
+
+    # Create the destination folder if it doesn't exist.
+    os.makedirs(database_path_dst, exist_ok=True)    
+
+    # Iterate over the folders in the source folder.
+    for subset_name in ['test', 'train', 'valid']:
+
+        subset_path_src = os.path.join(database_path_src, subset_name)
+        subset_path_dst = os.path.join(database_path_dst, subset_name)
+        track_list = os.listdir(subset_path_src)
+        track_list_length = len(track_list)
+
+        # Loop until the desired amount of files have been created.
+        for k in tqdm(range((augmentation_ratio-1)*track_list_length), desc=f'Creating new files for {subset_name} subset.'):
+
+            # Define list of stem tensors.
+            stems_tensor_list = []
+
+            # Loop to fetch four sources (and placeholder mixture).
+            for i in range(5):
+                random_track_name = random.choice(track_list)
+                random_track_path = os.path.join(subset_path_src, random_track_name)
+                source_i_file_name = os.path.join(random_track_path, f'{STEM_DICT[i]}.wav')
+                source_i_tensor, sr = torchaudio.load(source_i_file_name)
+                stems_tensor_list.append(source_i_tensor)
+            
+            # Stack the source tensors.
+            stems_tensor = torch.stack(stems_tensor_list)     
+            
+            # Re-create the mixture file by summing the sources.
+            stems_tensor[0] = stems_tensor[1:].sum(axis=0)
+
+            # Write the destination folder.
+            track_path_dst = os.path.join(subset_path_dst, f'track_1{k:03}00')
+            os.makedirs(track_path_dst, exist_ok=True)
+
+            # Iterate over the stems and write the corresponding stem WAV file.
+            for i, stem_i in enumerate(stems_tensor):
+                file_path_dst = os.path.join(track_path_dst, f'{STEM_DICT[i]}.wav')
+                sf.write(file_path_dst, data=stem_i.numpy().T, samplerate=sr, format='wav')
+            
+
+    print(f"Successfully augmented MUSDB18 dataset into '{database_path_dst}'.")
+
+    return database_path_dst  
 
 
 def split_test_and_valid(database_path, subset_size=20):
-    """
-    Split the MUSDB18 test set into test and validation sets.
+    """ Split the MUSDB18 test set into test and validation subsets.
     
     Args:
-        database_path (str): The path to the MUSDB18 dataset.
-        subset_size (int, optional): The desired size of the 'test' subset. Defaults to 20.
+        database_path (str): Path to the MUSDB18 dataset.
+        subset_size (int, optional): Desired size of the 'test' subset. Defaults to 20.
     
     Returns:
-        subset (list): A subset of file names from MUSDB18.
+        subset (list[str]): Subset of file names for the MUSDB18 'test' subset.
     """
 
     database_test_path_src = os.path.join(database_path, 'test')
@@ -133,10 +232,13 @@ def split_test_and_valid(database_path, subset_size=20):
 
     return test_subset
 
+
 if __name__ == '__main__':
 
     database_path_src = r"data\musdb18"
     database_path_dst = r"data\musdb18_preprocessed"
 
-    test_subset = split_test_and_valid(database_path_src)
-    preprocess_musdb(database_path_src, database_path_dst, test_subset)
+    test_subset = split_test_and_valid(database_path_src, subset_size=20)
+    preprocess_musdb18(database_path_src, database_path_dst, test_subset, hq=False)
+
+    data_augmentation_musdb18(database_path_src=r"data\musdb18_preprocessed", database_path_dst=r"data\musdb18_augmented")
