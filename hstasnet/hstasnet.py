@@ -41,8 +41,8 @@ class HSTasNet(nn.Module):
         self.time_feature_size = time_feature_size
         self.spec_feature_size = spec_feature_size
 
-        assert not (time_win_size % time_hop_size), f"time_win_size ({time_win_size}) must be a multiple of time_hop_size ({time_hop_size})"
-        assert not (spec_win_size % spec_hop_size), f"spec_win_size ({spec_win_size}) must be a multiple of spec_hop_size ({spec_hop_size})"
+        assert (time_win_size % time_hop_size) == 0, f"time_win_size ({time_win_size}) must be a multiple of time_hop_size ({time_hop_size})"
+        assert (spec_win_size % spec_hop_size) == 0, f"spec_win_size ({spec_win_size}) must be a multiple of spec_hop_size ({spec_hop_size})"
         assert time_win_size == spec_win_size, f"time_win_size ({time_win_size}) must be equal to spec_win_size ({spec_win_size})"
         assert time_hop_size == spec_hop_size, f"time_hop_size ({time_hop_size}) must be equal to spec_hop_size ({spec_hop_size})" 
 
