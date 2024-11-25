@@ -6,5 +6,4 @@ Made for practice, currently incomplete.
 
 Create a conda environment then install the dependencies:  
 `conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia`  
-(CPU only: `conda install pytorch torchvision torchaudio cpuonly -c pytorch`)  
 `conda install -c conda-forge -y -f requirements.txt`
