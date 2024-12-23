@@ -8,6 +8,7 @@ import os
 import sys
 import stempeg
 import random
+import shutil
 from tqdm import tqdm
 
 # Add the parent directory to the path.
@@ -119,36 +120,34 @@ def preprocess_musdb18(database_path_src, database_path_dst, test_subset, hq=Fal
                             sf.write(file_path_dst, data=segment_j.T, samplerate=sr, format='wav')
 
             else:
-                # Check if the file is a .wav file.
-                if song_name.endswith('.wav'):
 
-                    # Load the WAV stem files into an array.
-                    stems_tensor_list = []
-                    for i in range(5):
-                        song_path = os.path.join(subset_path_src, song_name)
-                        source_i_file_name = os.path.join(song_path, f'{STEM_DICT[i]}.wav')
-                        source_i_tensor, sr = torchaudio.load(source_i_file_name)
-                        stems_tensor_list.append(source_i_tensor)
-                    stems_tensor = torch.stack(stems_tensor_list)
-                    stems_array = stems_tensor.numpy()
-        
-                    # Segment the audio array.
-                    segments = segment_audio_array(stems_array)
+                # Load the WAV stem files into an array.
+                stems_tensor_list = []
+                for i in range(5):
+                    song_path = os.path.join(subset_path_src, song_name)
+                    source_i_file_name = os.path.join(song_path, f'{STEM_DICT[i]}.wav')
+                    source_i_tensor, sr = torchaudio.load(source_i_file_name)
+                    stems_tensor_list.append(source_i_tensor)
+                stems_tensor = torch.stack(stems_tensor_list)
+                stems_array = stems_tensor.numpy()
+    
+                # Segment the audio array.
+                segments = segment_audio_array(stems_array)
 
-                    # Re-create the mixture file by summing the sources.
-                    segments[0] = segments[1:].sum(axis=0)
+                # Re-create the mixture file by summing the sources.
+                segments[0] = segments[1:].sum(axis=0)
 
-                    # Iterate over the stems (sources or mixture).
-                    for i, stem_i in enumerate(segments):
+                # Iterate over the stems (sources or mixture).
+                for i, stem_i in enumerate(segments):
 
-                        # Iterate over the segments.
-                        for j, segment_j in enumerate(stem_i):
-                        
-                            # Write the segment to the destination folder.
-                            song_path_dst = os.path.join(subset_path_dst, f'track_{k:04}{j:02}')
-                            os.makedirs(song_path_dst, exist_ok=True)
-                            file_path_dst = os.path.join(song_path_dst, f'{STEM_DICT[i]}.wav')
-                            sf.write(file_path_dst, data=segment_j.T, samplerate=sr, format='wav')                
+                    # Iterate over the segments.
+                    for j, segment_j in enumerate(stem_i):
+                    
+                        # Write the segment to the destination folder.
+                        song_path_dst = os.path.join(subset_path_dst, f'track_{k:04}{j:02}')
+                        os.makedirs(song_path_dst, exist_ok=True)
+                        file_path_dst = os.path.join(song_path_dst, f'{STEM_DICT[i]}.wav')
+                        sf.write(file_path_dst, data=segment_j.T, samplerate=sr, format='wav')                
 
     print(f"Successfully preprocessed MUSDB18 dataset into '{database_path_dst}'.")
     return database_path_dst
@@ -177,7 +176,13 @@ def data_augmentation_musdb18(database_path_src, database_path_dst, augmentation
         subset_path_dst = os.path.join(database_path_dst, subset_name)
         track_list = os.listdir(subset_path_src)
         track_list_length = len(track_list)
-
+        
+        # Copy the contents of 'subset_path_src' to the 'subset_path_dst' directory.
+        for file_name in track_list:
+            file_path_src = os.path.join(subset_path_src, file_name)
+            file_path_dst = os.path.join(subset_path_dst, file_name)
+            shutil.copytree(file_path_src, file_path_dst, dirs_exist_ok=True)
+    
         # Loop until the desired amount of files have been created.
         for k in tqdm(range((augmentation_ratio-1)*track_list_length), desc=f'Creating new files for {subset_name} subset.'):
 
@@ -235,10 +240,10 @@ def split_test_and_valid(database_path, subset_size=20):
 
 if __name__ == '__main__':
 
-    database_path_src = r"data\musdb18"
-    database_path_dst = r"data\musdb18_preprocessed"
+    # database_path_src = "data/musdb18hq"
+    # database_path_dst = "data/musdb18hq_preprocessed"
 
-    test_subset = split_test_and_valid(database_path_src, subset_size=20)
-    preprocess_musdb18(database_path_src, database_path_dst, test_subset, hq=False)
+    # test_subset = split_test_and_valid(database_path_src, subset_size=20)
+    # preprocess_musdb18(database_path_src, database_path_dst, test_subset, hq=True)
 
-    data_augmentation_musdb18(database_path_src=r"data\musdb18_preprocessed", database_path_dst=r"data\musdb18_augmented")
+    data_augmentation_musdb18(database_path_src="data/musdb18hq_preprocessed", database_path_dst="data/musdb18hq_augmented", augmentation_ratio=4)

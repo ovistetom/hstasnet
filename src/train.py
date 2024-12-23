@@ -27,10 +27,10 @@ def define_args():
     """
     args = {
         # Training parameters.
-        'solver_path': os.path.join('out', 'solvers', 'hstasnet1.pkl'),
-        'continue_from': os.path.join('out', 'solvers', 'hstasnet.pkl'),
+        'solver_path': os.path.join('out', 'solvers', 'hstasnet.pkl'),
+        'continue_from': None,
         'batch_size': 12,
-        'num_epochs': 2,
+        'num_epochs': 100,
         'num_workers': 4,
         'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
 
@@ -51,7 +51,7 @@ def define_args():
             'spec_win_size': 1024,
             'spec_hop_size': 512,
             'spec_fft_size': 1024,
-            'rnn_hidden_size': 500,            
+            'rnn_hidden_size': 512,            
             }
         }
 
@@ -68,7 +68,7 @@ def define_loaders(args):
         loaders (dict): Dictionary containing the DataLoaders.
     """
         
-    root = os.path.join('data', 'musdb18_preprocessed')
+    root = os.path.join('data', 'musdb18hq_augmented')
     sources = args['model_srcs']
 
     trn_dataset = MUSDB18Dataset(root, 'train', sources)
@@ -105,6 +105,7 @@ def main(args, train=True):
 
     # Define model.
     model = HSTasNet(**args['model_args'])
+    os.makedirs(os.path.dirname(args['model_path']), exist_ok=True)
 
     # Define criterion.
     criterion = losses.l1_loss
@@ -117,6 +118,9 @@ def main(args, train=True):
 
     # Define solver.
     solver = Solver(model, criterion, optimizer, scheduler, loaders, args, device=args['device'])
+    os.makedirs(os.path.dirname(args['solver_path']), exist_ok=True)
+
+    # Train model.
     solver = solver.train() if train else solver
 
     return solver

@@ -82,7 +82,7 @@ class MUSDB18Dataset(Dataset):
 
 if __name__ == '__main__':
 
-    root = r"data\musdb18_preprocessed"
+    root = "data/musdb18hq_augmented"
     subset = 'valid'
     sources = ['bass', 'drums', 'vocals']
     dataset = MUSDB18Dataset(root, subset, sources)

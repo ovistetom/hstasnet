@@ -5,5 +5,4 @@ A PyTorch implementation of "Real-time Low-latency Music Source Separation using
 Made for practice, currently incomplete.
 
 Create a conda environment then install the dependencies:  
-`conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia`  
-`conda install -c conda-forge -y -f requirements.txt`
+`pip3 install -r requirements.txt`
