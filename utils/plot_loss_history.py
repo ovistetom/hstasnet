@@ -56,11 +56,11 @@ def plot_loss_from_log_file(log_path):
         # Fill in the loss history arrays.
         for line in lines:
             if line.startswith('Train'):
-                #train_loss.append(float(line.split('Loss = ')[1]))
-                train_loss.append(float(line.split('Loss = ')[1]) / 91)
+                train_loss.append(float(line.split('Loss = ')[1]))
+                # train_loss.append(float(line.split('Loss = ')[1]) / 91)
             elif line.startswith('Valid'):
-                #valid_loss.append(float(line.split('Loss = ')[1]))
-                valid_loss.append(float(line.split('Loss = ')[1]) / 30)
+                valid_loss.append(float(line.split('Loss = ')[1]))
+                # valid_loss.append(float(line.split('Loss = ')[1]) / 30)
 
         num_epochs = range(len(train_loss))
 
@@ -68,13 +68,17 @@ def plot_loss_from_log_file(log_path):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     ax.plot(num_epochs, train_loss, label='Train Loss')
-    ax.plot(num_epochs, valid_loss, label='Validation Loss')
     
     ax.grid()
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("Loss")
     ax.set_title("Loss History")
-    ax.legend()
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Train Loss", color='b')
+    ax.tick_params(axis='y', labelcolor='b')
+
+    ax2 = ax.twinx()
+    ax2.plot(num_epochs, valid_loss, label='Valid Loss', color='r')
+    ax2.set_ylabel("Valid Loss", color='r')
+    ax2.tick_params(axis='y', labelcolor='r')
 
     fig.tight_layout()
     plt.show()
@@ -83,5 +87,5 @@ def plot_loss_from_log_file(log_path):
 
 if __name__ == '__main__':
 
-    log_path = r"logs/train.log"
+    log_path = r"out/logs/log_20241225.log"
     plot_loss_from_log_file(log_path)
