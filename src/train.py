@@ -2,6 +2,7 @@ import os
 import sys
 import torch
 from torch.utils.data import DataLoader
+from datetime import datetime
 
 
 # Add necessary directories to the path.
@@ -27,7 +28,7 @@ def define_args():
     """
     args = {
         # Training parameters.
-        'solver_path': os.path.join('out', 'solvers', 'hstasnet.pkl'),
+        'solver_path': os.path.join('out', 'solvers', f"hstasnet_{datetime.today().strftime('%Y%m%d')}.pkl"),
         'continue_from': None,
         'batch_size': 12,
         'num_epochs': 100,
@@ -40,19 +41,22 @@ def define_args():
 
         # Model parameters.
         'model_name': 'hstasnet',
-        'model_path': os.path.join('out', 'models', 'hstasnet.pt'),
+        'model_path': os.path.join('out', 'models', f"hstasnet_{datetime.today().strftime('%Y%m%d')}.pt"),
         'model_srcs': ['bass', 'drums', 'other', 'vocals'],
         'model_args': {
             'num_sources': 4,
             'num_channels': 2,
             'time_win_size': 1024,
             'time_hop_size': 512,
-            'time_ftr_size': 600,
+            'time_ftr_size': 512,
             'spec_win_size': 1024,
             'spec_hop_size': 512,
             'spec_fft_size': 1024,
             'rnn_hidden_size': 512,            
-            }
+            },
+
+        # Other parameters.
+        'log_path': os.path.join('out', 'models', f"hstasnet_{datetime.today().strftime('%Y%m%d')}.log"),
         }
 
     return args
@@ -114,7 +118,7 @@ def main(args, train=True):
     optimizer = torch.optim.Adam(model.parameters(), lr=args['learning_rate'], weight_decay=args['weight_decay'])
 
     # Define scheduler.
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.125, patience=3)
+    scheduler = None #torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.125, patience=3)
 
     # Define solver.
     solver = Solver(model, criterion, optimizer, scheduler, loaders, args, device=args['device'])
@@ -122,6 +126,9 @@ def main(args, train=True):
 
     # Train model.
     solver = solver.train() if train else solver
+
+    # Save log file.
+    os.rename(src='logs/train.log', dst=args['log_path'])
 
     return solver
 

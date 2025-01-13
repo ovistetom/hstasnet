@@ -197,7 +197,7 @@ class Solver:
         package = {
             'model_state_dict': self.model.state_dict(),
             'optimizer_dict': self.optimizer.state_dict(),
-            'scheduler_dict': self.scheduler.state_dict(),
+            'scheduler_dict': {} if self.scheduler is None else self.scheduler.state_dict(),
             'running_epoch': self.running_epoch,
             'trn_loss_history': self.trn_loss_history.tolist(),
             'val_loss_history': self.val_loss_history.tolist(),
