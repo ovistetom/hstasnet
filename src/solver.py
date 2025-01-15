@@ -5,7 +5,7 @@ from states import load_solver_package_from_path
 
 
 class Solver:
-    """ A class to train and evaluate a PyTorch model.
+    """A class to train and evaluate a PyTorch model.
 
     Args:
         model (nn.Module): The PyTorch model to be trained.
@@ -173,19 +173,8 @@ class Solver:
         self.prev_val_loss = float('inf')
         self.best_val_loss = float('inf')
 
-    # def _init_args_kwargs(self):
-
-    #     args = [
-    #         ]
-
-    #     kwargs = {
-    #         'device': self.device,
-    #         }
-
-    #     return args, kwargs
-    
     def serialize(self):
-        """ Serialize the solver into a dictionary.
+        """Serialize the solver into a dictionary.
         
         Args:    
             solver (Solver): The solver to serialize.
@@ -206,7 +195,7 @@ class Solver:
         return package
     
     def save_to_path(self, solver_path):
-        """ Save the solver to a given file path.
+        """Save the solver to a given file path.
 
         Args:
             solver_path (str): The file path to save the solver to.

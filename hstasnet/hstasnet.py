@@ -232,7 +232,7 @@ class HSTasNet(nn.Module):
             L = out.size(-1)
             out = ff.pad(out, (0, length-L), 'constant')                        # B x S x C x L_padded             
 
-        return out
+        return out.contiguous()
     
     def _init_args_kwargs(self):
 

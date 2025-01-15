@@ -21,7 +21,7 @@ from hstasnet import HSTasNet
 
 
 def define_args():
-    """ Define the training parameters.
+    """Define the training parameters.
 
     Returns:
         args (dict): A dictionary containing the parameters for the training routine and the model.
@@ -56,14 +56,14 @@ def define_args():
             },
 
         # Other parameters.
-        'log_path': os.path.join('out', 'models', f"hstasnet_{datetime.today().strftime('%Y%m%d')}.log"),
+        'log_path': os.path.join('out', 'logs', f"hstasnet_{datetime.today().strftime('%Y%m%d')}.log"),
         }
 
     return args
 
 
 def define_loaders(args):
-    """ Define DataLoaders for the training, validation, and test sets.
+    """Define DataLoaders for the training, validation, and test sets.
 
     Args:
         args (dict): Dictionary containing the training parameters.
@@ -72,7 +72,7 @@ def define_loaders(args):
         loaders (dict): Dictionary containing the DataLoaders.
     """
         
-    root = os.path.join('data', 'musdb18hq_augmented')
+    root = os.path.join('/home/ovistetom/Documents/Databases_Local/MUSDB18', 'musdb18hq_augmented')
     sources = args['model_srcs']
 
     trn_dataset = MUSDB18Dataset(root, 'train', sources)
@@ -95,7 +95,7 @@ def define_loaders(args):
 
 
 def main(args, train=True):
-    """ Define model, loaders, optimizer, criterion, scheduler, solver and launch training.
+    """Define model, loaders, optimizer, criterion, scheduler, solver and launch training.
 
     Args:
         args (dict): Dictionary containing the training parameters.
@@ -128,6 +128,7 @@ def main(args, train=True):
     solver = solver.train() if train else solver
 
     # Save log file.
+    os.makedirs(os.path.dirname(args['log_path']), exist_ok=True)
     os.rename(src='logs/train.log', dst=args['log_path'])
 
     return solver
