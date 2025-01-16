@@ -60,10 +60,9 @@ class Solver:
             print(f"Valid Summary | Epoch {epoch+1:02d} | Loss = {val_loss:.3f}")
 
             # Update scheduler.
-            if self.scheduler is not None:
-                self.scheduler.step(val_loss)
-                last_lr = self.scheduler.get_last_lr()[0]
-                print(f"\tLearning rate = {last_lr:.6f}")
+            self.scheduler.step()
+            last_lr = self.scheduler.get_last_lr()[0]
+            print(f"\tLearning rate = {last_lr:.6f}")
 
             # Save model.
             self.trn_loss_history[epoch] = trn_loss
@@ -186,7 +185,7 @@ class Solver:
         package = {
             'model_state_dict': self.model.state_dict(),
             'optimizer_dict': self.optimizer.state_dict(),
-            'scheduler_dict': {} if self.scheduler is None else self.scheduler.state_dict(),
+            'scheduler_dict': self.scheduler.state_dict(),
             'running_epoch': self.running_epoch,
             'trn_loss_history': self.trn_loss_history.tolist(),
             'val_loss_history': self.val_loss_history.tolist(),

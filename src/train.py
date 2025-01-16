@@ -29,7 +29,8 @@ def define_args():
     args = {
         # Training parameters.
         'solver_path': os.path.join('out', 'solvers', f"hstasnet_{datetime.today().strftime('%Y%m%d')}.pkl"),
-        'continue_from': None,
+        'continue_from': None, #os.path.join('out', 'models', 'hstasnet_20250115.pt'),
+        # TODO: add support for resuming training from a checkpoint.
         'batch_size': 12,
         'num_epochs': 100,
         'num_workers': 4,
@@ -118,7 +119,8 @@ def main(args, train=True):
     optimizer = torch.optim.Adam(model.parameters(), lr=args['learning_rate'], weight_decay=args['weight_decay'])
 
     # Define scheduler.
-    scheduler = None #torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.125, patience=3)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda epoch: 1.0) 
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.125, patience=3)
 
     # Define solver.
     solver = Solver(model, criterion, optimizer, scheduler, loaders, args, device=args['device'])
