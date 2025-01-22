@@ -58,6 +58,7 @@ def define_args():
 
         # Other parameters.
         'log_path': os.path.join('out', 'logs', f"hstasnet_{datetime.today().strftime('%Y%m%d')}.log"),
+        'save_every': 5,
         }
 
     return args
@@ -119,7 +120,7 @@ def main(args, train=True):
     optimizer = torch.optim.Adam(model.parameters(), lr=args['learning_rate'], weight_decay=args['weight_decay'])
 
     # Define scheduler.
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda epoch: 1.0) 
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda _: 1.0) 
     # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.125, patience=3)
 
     # Define solver.
@@ -147,6 +148,6 @@ if __name__ == '__main__':
     args = define_args()
 
     # Train the model.
-    solver = main(args, train=True)
+    solver = main(args)
 
     print("\n*** FINISHED TRAINING ***")

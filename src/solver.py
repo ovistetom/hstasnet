@@ -73,9 +73,11 @@ class Solver:
                 print(f"Best model saved at '{self.args['model_path']}'.")
 
             self.running_epoch += 1
+
+            if self.running_epoch % self.args['save_every'] == 0:
+                self.save_to_path(self.args['solver_path'])
+                print(f"Solver saved at '{self.args['solver_path']}'.")
         
-        self.save_to_path(self.args['solver_path'])
-        print(f"Solver saved at '{self.args['solver_path']}'.")
         print('---------------------------------------')
 
         return self
