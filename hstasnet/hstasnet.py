@@ -253,7 +253,7 @@ class HSTasNet(nn.Module):
         
         return args, kwargs
     
-    def serialize(self):
+    def _serialize(self):
         """ Serialize the model into a dictionary.
         
         Args:
@@ -284,7 +284,7 @@ class HSTasNet(nn.Module):
         Returns:
             model_path (str): The file path to save the model to.                    
         """
-        model_package = self.serialize()
+        model_package = self._serialize()
         torch.save(model_package, model_path)
 
         return model_path
