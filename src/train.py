@@ -29,8 +29,6 @@ def define_args():
     args = {
         # Training parameters.
         'solver_path': os.path.join('out', 'solvers', f"hstasnet_{datetime.today().strftime('%Y%m%d')}.pkl"),
-        'continue_from': None, #os.path.join('out', 'models', 'hstasnet_20250115.pt'),
-        # TODO: add support for resuming training from a checkpoint.
         'batch_size': 12,
         'num_epochs': 100,
         'num_workers': 4,
@@ -57,8 +55,10 @@ def define_args():
             },
 
         # Other parameters.
+        'continue_from': None, #os.path.join('out', 'solvers', 'hstasnet_20250121.pkl'),
+        #'from_epoch': 48,
         'log_path': os.path.join('out', 'logs', f"hstasnet_{datetime.today().strftime('%Y%m%d')}.log"),
-        'save_every': 5,
+        #'save_every': 5,
         }
 
     return args
@@ -120,8 +120,8 @@ def main(args, train=True):
     optimizer = torch.optim.Adam(model.parameters(), lr=args['learning_rate'], weight_decay=args['weight_decay'])
 
     # Define scheduler.
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda _: 1.0) 
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.125, patience=3)
+    # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda _: 1.0) 
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.25, patience=4)
 
     # Define solver.
     solver = Solver(model, criterion, optimizer, scheduler, loaders, args, device=args['device'])

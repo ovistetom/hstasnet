@@ -1,7 +1,6 @@
 import torch
 import pickle
 from tqdm import tqdm
-from states import load_solver_package_from_path
 
 
 class Solver:
@@ -64,19 +63,17 @@ class Solver:
             last_lr = self.scheduler.get_last_lr()[0]
             print(f"\tLearning rate = {last_lr:.6f}")
 
-            # Save model.
+            # Save model and solver.
             self.trn_loss_history[epoch] = trn_loss
             self.val_loss_history[epoch] = val_loss
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
                 self.model.save_to_path(self.args['model_path'])
                 print(f"Best model saved at '{self.args['model_path']}'.")
-
-            self.running_epoch += 1
-
-            if self.running_epoch % self.args['save_every'] == 0:
                 self.save_to_path(self.args['solver_path'])
                 print(f"Solver saved at '{self.args['solver_path']}'.")
+
+            self.running_epoch += 1
         
         print('---------------------------------------')
 
@@ -161,29 +158,21 @@ class Solver:
         if self.args['continue_from']:
             print('---------------------------------------')
             print(f"Loading checkpoint solver: '{self.args['continue_from']}'.")     
-            package = load_solver_package_from_path(self.args['continue_from'])
-            self.model.load_state_dict(package['model_state_dict'])
-            self.optimizer.load_state_dict(package['optimizer_dict'])
-            self.scheduler.load_state_dict(package['scheduler_dict'])
-            self.running_epoch = package['running_epoch']
-            self.trn_loss_history[:self.running_epoch] = torch.Tensor(package['trn_loss_history'][:self.running_epoch]).to(self.device)
-            self.val_loss_history[:self.running_epoch] = torch.Tensor(package['val_loss_history'][:self.running_epoch]).to(self.device)
+            self.load_from_path(self.args['continue_from'])
         else:
             self.running_epoch = 0
 
         self.prev_val_loss = float('inf')
         self.best_val_loss = float('inf')
 
-    def serialize(self):
+    def _serialize(self):
         """Serialize the solver into a dictionary.
         
         Args:    
             solver (Solver): The solver to serialize.
-
         Returns:
             dict: Dictionary containing the solver's class, arguments, keyword arguments, and state.
         """
-
         package = {
             'model_state_dict': self.model.state_dict(),
             'optimizer_dict': self.optimizer.state_dict(),
@@ -192,19 +181,37 @@ class Solver:
             'trn_loss_history': self.trn_loss_history.tolist(),
             'val_loss_history': self.val_loss_history.tolist(),
             }
-        
         return package
+    
+    def _deserialize(self, package):
+        """Deserialize a solver from a dictionary.
+        
+        Args:    
+            package (dict): Dictionary containing the solver's class, arguments, keyword arguments, and state.
+        """
+        self.model.load_state_dict(package['model_state_dict'])
+        self.optimizer.load_state_dict(package['optimizer_dict'])
+        self.scheduler.load_state_dict(package['scheduler_dict'])
+        self.running_epoch = self.args['from_epoch'] if self.args['from_epoch'] else package['running_epoch']
+        self.trn_loss_history[:self.running_epoch] = torch.Tensor(package['trn_loss_history'][:self.running_epoch]).to(self.device)
+        self.val_loss_history[:self.running_epoch] = torch.Tensor(package['val_loss_history'][:self.running_epoch]).to(self.device)
     
     def save_to_path(self, solver_path):
         """Save the solver to a given file path.
 
         Args:
             solver_path (str): The file path to save the solver to.
-        Returns:
-            solver_path (str): The file path to save the solver to.
         """
-        solver_package = self.serialize()
+        solver_package = self._serialize()
         with open(solver_path, 'wb') as solver_file: 
             pickle.dump(solver_package, solver_file)
 
-        return solver_path
+    def load_from_path(self, solver_path):
+        """Load a solver from a file path.
+        
+        Args:
+            solver_path (str): The file path to load the solver from.
+        """
+        with open(solver_path, 'rb') as solver_file: 
+            solver_package = pickle.load(solver_file)
+        self._deserialize(solver_package)

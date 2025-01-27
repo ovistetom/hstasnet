@@ -1,6 +1,6 @@
 import torch
 import pickle
-
+from solver import Solver
 
 def load_model_package_from_path(path, map_location=torch.device('cpu')):
     """Load a model from a file path.
@@ -56,7 +56,6 @@ def load_solver_package_from_path(solver_path):
     
     Args:
         solver_path (str): The file path to load the solver from.
-        map_location (torch.device, optional): The device to move the solver to. Defaults to 'cpu'.
 
     Returns:
         package (dict): A dictionary containing the solver's class, arguments, keyword arguments, and state.
