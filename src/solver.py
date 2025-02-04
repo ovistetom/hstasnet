@@ -59,7 +59,7 @@ class Solver:
             print(f"Valid Summary | Epoch {epoch+1:02d} | Loss = {val_loss:.3f}")
 
             # Update scheduler.
-            self.scheduler.step()
+            self.scheduler.step(val_loss)
             last_lr = self.scheduler.get_last_lr()[0]
             print(f"\tLearning rate = {last_lr:.6f}")
 

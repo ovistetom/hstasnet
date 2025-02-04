@@ -87,5 +87,6 @@ def plot_loss_from_log_file(log_path):
 
 if __name__ == '__main__':
 
-    log_path = r"logs/train.log"
+    # log_path = r"logs/train.log"
+    log_path = r"out/logs/hstasnet_20250127.log"
     plot_loss_from_log_file(log_path)

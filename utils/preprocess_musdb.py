@@ -186,12 +186,12 @@ def data_augmentation_musdb18(database_path_src, database_path_dst, augmentation
     return database_path_dst  
 
 
-def split_test_and_valid(database_path, subset_size=20):
-    """Split the MUSDB18 test set into test and validation subsets.
+def split_test_and_valid(database_path, test_subset_size=20):
+    """Split the MUSDB18 'test' set into smaller test subset and validation subset.
     
     Args:
         database_path (str): Path to the MUSDB18 dataset.
-        subset_size (int, optional): Desired size of the 'test' subset. Defaults to 20.
+        test_subset_size (int, optional): Desired size of the 'test' subset. Defaults to 20.
     
     Returns:
         subset (list[str]): Subset of file names for the MUSDB18 'test' subset.
@@ -199,9 +199,9 @@ def split_test_and_valid(database_path, subset_size=20):
 
     database_test_path_src = os.path.join(database_path, 'test')
     database_test_list = os.listdir(database_test_path_src)
-    test_subset = random.sample(database_test_list, subset_size)
+    test_subset = random.sample(database_test_list, test_subset_size)
 
-    print(f"Successfully split test set (test size = {subset_size}, valid size = {len(database_test_list) - subset_size}).")
+    print(f"Successfully split test set (test size = {test_subset_size}, valid size = {len(database_test_list) - test_subset_size}).")
 
     return test_subset
 
